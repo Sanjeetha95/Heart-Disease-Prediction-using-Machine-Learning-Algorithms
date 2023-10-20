@@ -1,0 +1,805 @@
+{
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "1oJD6Ik5jKAq"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "\n",
+        "import seaborn as sns\n",
+        "import matplotlib.pyplot as plt\n",
+        "%matplotlib inline\n",
+        "\n",
+        "from sklearn.neighbors import KNeighborsClassifier\n",
+        "from sklearn.naive_bayes import GaussianNB\n",
+        "\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.preprocessing import OneHotEncoder\n",
+        "from sklearn.compose import make_column_transformer\n",
+        "from sklearn.preprocessing import StandardScaler\n",
+        "from sklearn import metrics"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Data Fetching"
+      ],
+      "metadata": {
+        "id": "6SIHDti2zwWg"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "I2HWDKoOjz8n"
+      },
+      "outputs": [],
+      "source": [
+        "df = pd.read_csv(\"/content/drive/MyDrive/dataset.csv\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df.head()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 226
+        },
+        "id": "WTUUrXrnyOcd",
+        "outputId": "63764c18-79e3-4cca-c469-a4a595464746"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "  HeartDisease    BMI Smoking AlcoholDrinking Stroke  PhysicalHealth  \\\n",
+              "0           No  16.60     Yes              No     No             3.0   \n",
+              "1           No  20.34      No              No    Yes             0.0   \n",
+              "2           No  26.58     Yes              No     No            20.0   \n",
+              "3           No  24.21      No              No     No             0.0   \n",
+              "4           No  23.71      No              No     No            28.0   \n",
+              "\n",
+              "   MentalHealth DiffWalking     Sex  AgeCategory   Race Diabetic  \\\n",
+              "0          30.0          No  Female        55-59  White      Yes   \n",
+              "1           0.0          No  Female  80 or older  White       No   \n",
+              "2          30.0          No    Male        65-69  White      Yes   \n",
+              "3           0.0          No  Female        75-79  White       No   \n",
+              "4           0.0         Yes  Female        40-44  White       No   \n",
+              "\n",
+              "  PhysicalActivity  GenHealth  SleepTime Asthma KidneyDisease SkinCancer  \n",
+              "0              Yes  Very good        5.0    Yes            No        Yes  \n",
+              "1              Yes  Very good        7.0     No            No         No  \n",
+              "2              Yes       Fair        8.0    Yes            No         No  \n",
+              "3               No       Good        6.0     No            No        Yes  \n",
+              "4              Yes  Very good        8.0     No            No         No  "
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-d78cb707-33ee-4c59-abd7-a7b9e5c8fac4\" class=\"colab-df-container\">\n",
+              "    <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>HeartDisease</th>\n",
+              "      <th>BMI</th>\n",
+              "      <th>Smoking</th>\n",
+              "      <th>AlcoholDrinking</th>\n",
+              "      <th>Stroke</th>\n",
+              "      <th>PhysicalHealth</th>\n",
+              "      <th>MentalHealth</th>\n",
+              "      <th>DiffWalking</th>\n",
+              "      <th>Sex</th>\n",
+              "      <th>AgeCategory</th>\n",
+              "      <th>Race</th>\n",
+              "      <th>Diabetic</th>\n",
+              "      <th>PhysicalActivity</th>\n",
+              "      <th>GenHealth</th>\n",
+              "      <th>SleepTime</th>\n",
+              "      <th>Asthma</th>\n",
+              "      <th>KidneyDisease</th>\n",
+              "      <th>SkinCancer</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>No</td>\n",
+              "      <td>16.60</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>3.0</td>\n",
+              "      <td>30.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>55-59</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Very good</td>\n",
+              "      <td>5.0</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Yes</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>No</td>\n",
+              "      <td>20.34</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>0.0</td>\n",
+              "      <td>0.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>80 or older</td>\n",
+              "      <td>White</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Very good</td>\n",
+              "      <td>7.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>No</td>\n",
+              "      <td>26.58</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>20.0</td>\n",
+              "      <td>30.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>65-69</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Fair</td>\n",
+              "      <td>8.0</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>No</td>\n",
+              "      <td>24.21</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>0.0</td>\n",
+              "      <td>0.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>75-79</td>\n",
+              "      <td>White</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Good</td>\n",
+              "      <td>6.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Yes</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>No</td>\n",
+              "      <td>23.71</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>28.0</td>\n",
+              "      <td>0.0</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>40-44</td>\n",
+              "      <td>White</td>\n",
+              "      <td>No</td>\n",
+              "      <td>Yes</td>\n",
+              "      <td>Very good</td>\n",
+              "      <td>8.0</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "      <td>No</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "    <div class=\"colab-df-buttons\">\n",
+              "\n",
+              "  <div class=\"colab-df-container\">\n",
+              "    <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-d78cb707-33ee-4c59-abd7-a7b9e5c8fac4')\"\n",
+              "            title=\"Convert this dataframe to an interactive table.\"\n",
+              "            style=\"display:none;\">\n",
+              "\n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\">\n",
+              "    <path d=\"M120-120v-720h720v720H120Zm60-500h600v-160H180v160Zm220 220h160v-160H400v160Zm0 220h160v-160H400v160ZM180-400h160v-160H180v160Zm440 0h160v-160H620v160ZM180-180h160v-160H180v160Zm440 0h160v-160H620v160Z\"/>\n",
+              "  </svg>\n",
+              "    </button>\n",
+              "\n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-buttons div {\n",
+              "      margin-bottom: 4px;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "    <script>\n",
+              "      const buttonEl =\n",
+              "        document.querySelector('#df-d78cb707-33ee-4c59-abd7-a7b9e5c8fac4 button.colab-df-convert');\n",
+              "      buttonEl.style.display =\n",
+              "        google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "      async function convertToInteractive(key) {\n",
+              "        const element = document.querySelector('#df-d78cb707-33ee-4c59-abd7-a7b9e5c8fac4');\n",
+              "        const dataTable =\n",
+              "          await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                    [key], {});\n",
+              "        if (!dataTable) return;\n",
+              "\n",
+              "        const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "          '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "          + ' to learn more about interactive tables.';\n",
+              "        element.innerHTML = '';\n",
+              "        dataTable['output_type'] = 'display_data';\n",
+              "        await google.colab.output.renderOutput(dataTable, element);\n",
+              "        const docLink = document.createElement('div');\n",
+              "        docLink.innerHTML = docLinkHtml;\n",
+              "        element.appendChild(docLink);\n",
+              "      }\n",
+              "    </script>\n",
+              "  </div>\n",
+              "\n",
+              "\n",
+              "<div id=\"df-d045b428-ea86-48df-bc52-6c52211033a4\">\n",
+              "  <button class=\"colab-df-quickchart\" onclick=\"quickchart('df-d045b428-ea86-48df-bc52-6c52211033a4')\"\n",
+              "            title=\"Suggest charts.\"\n",
+              "            style=\"display:none;\">\n",
+              "\n",
+              "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "     width=\"24px\">\n",
+              "    <g>\n",
+              "        <path d=\"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z\"/>\n",
+              "    </g>\n",
+              "</svg>\n",
+              "  </button>\n",
+              "\n",
+              "<style>\n",
+              "  .colab-df-quickchart {\n",
+              "      --bg-color: #E8F0FE;\n",
+              "      --fill-color: #1967D2;\n",
+              "      --hover-bg-color: #E2EBFA;\n",
+              "      --hover-fill-color: #174EA6;\n",
+              "      --disabled-fill-color: #AAA;\n",
+              "      --disabled-bg-color: #DDD;\n",
+              "  }\n",
+              "\n",
+              "  [theme=dark] .colab-df-quickchart {\n",
+              "      --bg-color: #3B4455;\n",
+              "      --fill-color: #D2E3FC;\n",
+              "      --hover-bg-color: #434B5C;\n",
+              "      --hover-fill-color: #FFFFFF;\n",
+              "      --disabled-bg-color: #3B4455;\n",
+              "      --disabled-fill-color: #666;\n",
+              "  }\n",
+              "\n",
+              "  .colab-df-quickchart {\n",
+              "    background-color: var(--bg-color);\n",
+              "    border: none;\n",
+              "    border-radius: 50%;\n",
+              "    cursor: pointer;\n",
+              "    display: none;\n",
+              "    fill: var(--fill-color);\n",
+              "    height: 32px;\n",
+              "    padding: 0;\n",
+              "    width: 32px;\n",
+              "  }\n",
+              "\n",
+              "  .colab-df-quickchart:hover {\n",
+              "    background-color: var(--hover-bg-color);\n",
+              "    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "    fill: var(--button-hover-fill-color);\n",
+              "  }\n",
+              "\n",
+              "  .colab-df-quickchart-complete:disabled,\n",
+              "  .colab-df-quickchart-complete:disabled:hover {\n",
+              "    background-color: var(--disabled-bg-color);\n",
+              "    fill: var(--disabled-fill-color);\n",
+              "    box-shadow: none;\n",
+              "  }\n",
+              "\n",
+              "  .colab-df-spinner {\n",
+              "    border: 2px solid var(--fill-color);\n",
+              "    border-color: transparent;\n",
+              "    border-bottom-color: var(--fill-color);\n",
+              "    animation:\n",
+              "      spin 1s steps(1) infinite;\n",
+              "  }\n",
+              "\n",
+              "  @keyframes spin {\n",
+              "    0% {\n",
+              "      border-color: transparent;\n",
+              "      border-bottom-color: var(--fill-color);\n",
+              "      border-left-color: var(--fill-color);\n",
+              "    }\n",
+              "    20% {\n",
+              "      border-color: transparent;\n",
+              "      border-left-color: var(--fill-color);\n",
+              "      border-top-color: var(--fill-color);\n",
+              "    }\n",
+              "    30% {\n",
+              "      border-color: transparent;\n",
+              "      border-left-color: var(--fill-color);\n",
+              "      border-top-color: var(--fill-color);\n",
+              "      border-right-color: var(--fill-color);\n",
+              "    }\n",
+              "    40% {\n",
+              "      border-color: transparent;\n",
+              "      border-right-color: var(--fill-color);\n",
+              "      border-top-color: var(--fill-color);\n",
+              "    }\n",
+              "    60% {\n",
+              "      border-color: transparent;\n",
+              "      border-right-color: var(--fill-color);\n",
+              "    }\n",
+              "    80% {\n",
+              "      border-color: transparent;\n",
+              "      border-right-color: var(--fill-color);\n",
+              "      border-bottom-color: var(--fill-color);\n",
+              "    }\n",
+              "    90% {\n",
+              "      border-color: transparent;\n",
+              "      border-bottom-color: var(--fill-color);\n",
+              "    }\n",
+              "  }\n",
+              "</style>\n",
+              "\n",
+              "  <script>\n",
+              "    async function quickchart(key) {\n",
+              "      const quickchartButtonEl =\n",
+              "        document.querySelector('#' + key + ' button');\n",
+              "      quickchartButtonEl.disabled = true;  // To prevent multiple clicks.\n",
+              "      quickchartButtonEl.classList.add('colab-df-spinner');\n",
+              "      try {\n",
+              "        const charts = await google.colab.kernel.invokeFunction(\n",
+              "            'suggestCharts', [key], {});\n",
+              "      } catch (error) {\n",
+              "        console.error('Error during call to suggestCharts:', error);\n",
+              "      }\n",
+              "      quickchartButtonEl.classList.remove('colab-df-spinner');\n",
+              "      quickchartButtonEl.classList.add('colab-df-quickchart-complete');\n",
+              "    }\n",
+              "    (() => {\n",
+              "      let quickchartButtonEl =\n",
+              "        document.querySelector('#df-d045b428-ea86-48df-bc52-6c52211033a4 button');\n",
+              "      quickchartButtonEl.style.display =\n",
+              "        google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "    })();\n",
+              "  </script>\n",
+              "</div>\n",
+              "    </div>\n",
+              "  </div>\n"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 3
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "B6s3wDOweobT",
+        "outputId": "a375c664-2c3b-44be-ee1a-de65e685ced9"
+      },
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "HeartDisease        0\n",
+              "BMI                 0\n",
+              "Smoking             0\n",
+              "AlcoholDrinking     0\n",
+              "Stroke              0\n",
+              "PhysicalHealth      0\n",
+              "MentalHealth        0\n",
+              "DiffWalking         0\n",
+              "Sex                 0\n",
+              "AgeCategory         0\n",
+              "Race                0\n",
+              "Diabetic            0\n",
+              "PhysicalActivity    0\n",
+              "GenHealth           0\n",
+              "SleepTime           0\n",
+              "Asthma              0\n",
+              "KidneyDisease       0\n",
+              "SkinCancer          0\n",
+              "dtype: int64"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 4
+        }
+      ],
+      "source": [
+        "df.isnull().sum()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "L7-KIIIafew5"
+      },
+      "outputs": [],
+      "source": [
+        "df =  df[df.columns].replace({'Yes':1, 'No':0, 'Male':1,'Female':0,'No, borderline diabetes':'0','Yes (during pregnancy)':'1' })\n",
+        "df['Diabetic'] = df['Diabetic'].astype(int)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "1Ek6H-fEkzTi",
+        "outputId": "fc14e861-9e13-4814-8693-35ffb1815f2f"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "RangeIndex: 319795 entries, 0 to 319794\n",
+            "Data columns (total 18 columns):\n",
+            " #   Column            Non-Null Count   Dtype  \n",
+            "---  ------            --------------   -----  \n",
+            " 0   HeartDisease      319795 non-null  int64  \n",
+            " 1   BMI               319795 non-null  float64\n",
+            " 2   Smoking           319795 non-null  int64  \n",
+            " 3   AlcoholDrinking   319795 non-null  int64  \n",
+            " 4   Stroke            319795 non-null  int64  \n",
+            " 5   PhysicalHealth    319795 non-null  float64\n",
+            " 6   MentalHealth      319795 non-null  float64\n",
+            " 7   DiffWalking       319795 non-null  int64  \n",
+            " 8   Sex               319795 non-null  int64  \n",
+            " 9   AgeCategory       319795 non-null  object \n",
+            " 10  Race              319795 non-null  object \n",
+            " 11  Diabetic          319795 non-null  int64  \n",
+            " 12  PhysicalActivity  319795 non-null  int64  \n",
+            " 13  GenHealth         319795 non-null  object \n",
+            " 14  SleepTime         319795 non-null  float64\n",
+            " 15  Asthma            319795 non-null  int64  \n",
+            " 16  KidneyDisease     319795 non-null  int64  \n",
+            " 17  SkinCancer        319795 non-null  int64  \n",
+            "dtypes: float64(4), int64(11), object(3)\n",
+            "memory usage: 43.9+ MB\n"
+          ]
+        }
+      ],
+      "source": [
+        "df.info()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Feature Engineering"
+      ],
+      "metadata": {
+        "id": "Wiu28StKz4IY"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "99XkavRWk4mX"
+      },
+      "outputs": [],
+      "source": [
+        "features = df.drop(columns =['HeartDisease'], axis = 1)\n",
+        "target = df['HeartDisease']"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "Fm6HLCr8lpbX"
+      },
+      "outputs": [],
+      "source": [
+        "from sklearn.model_selection import train_test_split\n",
+        "Xtrain, Xtest, ytrain, ytest = train_test_split(features, target, shuffle = True, test_size = .2, random_state = 44)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "TRNBlSywlzLL",
+        "outputId": "31945d36-5394-41c4-bca1-4a49cc4d731b"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/usr/local/lib/python3.10/dist-packages/sklearn/preprocessing/_encoders.py:868: FutureWarning: `sparse` was renamed to `sparse_output` in version 1.2 and will be removed in 1.4. `sparse_output` is ignored unless you leave `sparse` to its default value.\n",
+            "  warnings.warn(\n"
+          ]
+        }
+      ],
+      "source": [
+        "transformer = make_column_transformer(\n",
+        "    (OneHotEncoder(sparse=False), ['AgeCategory', 'Race', 'GenHealth']),\n",
+        "    remainder='passthrough')\n",
+        "\n",
+        "transformed_train = transformer.fit_transform(Xtrain)\n",
+        "transformed_train_data = pd.DataFrame(transformed_train, columns=transformer.get_feature_names_out())\n",
+        "\n",
+        "transformed_train_data.reset_index(drop=True, inplace=True)\n",
+        "Xtrain.reset_index(drop=True, inplace=True)\n",
+        "Xtrain = pd.concat([transformed_train_data, Xtrain], axis=1)\n",
+        "\n",
+        "Xtrain.drop(['AgeCategory', 'Race', 'GenHealth'], axis = 1, inplace = True)\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "etGxAwRqmJL6",
+        "outputId": "d3293181-46bf-4433-eb7a-8ef24fd17465"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/usr/local/lib/python3.10/dist-packages/sklearn/preprocessing/_encoders.py:868: FutureWarning: `sparse` was renamed to `sparse_output` in version 1.2 and will be removed in 1.4. `sparse_output` is ignored unless you leave `sparse` to its default value.\n",
+            "  warnings.warn(\n"
+          ]
+        }
+      ],
+      "source": [
+        "transformed_test = transformer.fit_transform(Xtest)\n",
+        "transformed_test_data = pd.DataFrame(transformed_test, columns=transformer.get_feature_names_out())\n",
+        "\n",
+        "transformed_test_data.reset_index(drop=True, inplace=True)\n",
+        "Xtest.reset_index(drop=True, inplace=True)\n",
+        "Xtest = pd.concat([transformed_test_data, Xtest], axis=1)\n",
+        "\n",
+        "Xtest.drop(['AgeCategory', 'Race', 'GenHealth'], axis = 1, inplace = True)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "6ebvERYvmQ7r"
+      },
+      "outputs": [],
+      "source": [
+        "scaler = StandardScaler()\n",
+        "\n",
+        "Xtrain = scaler.fit_transform(X_train)\n",
+        "Xtest = scaler.fit_transform(X_test)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Evaluation Metrices"
+      ],
+      "metadata": {
+        "id": "oGSfJPaOz8Lu"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "1DRQpszfmTiS"
+      },
+      "outputs": [],
+      "source": [
+        "def evaluate_model(model, x_test, y_test):\n",
+        "    from sklearn import metrics\n",
+        "\n",
+        "    y_pred = model.predict(x_test)\n",
+        "\n",
+        "    accuracy = metrics.accuracy_score(y_test, y_pred)\n",
+        "    precision = metrics.precision_score(y_test, y_pred)\n",
+        "    recall = metrics.recall_score(y_test, y_pred)\n",
+        "    f1 = metrics.f1_score(y_test, y_pred)\n",
+        "    kappa = metrics.cohen_kappa_score(y_test, y_pred)\n",
+        "\n",
+        "    y_pred_proba = model.predict_proba(x_test)[::,1]\n",
+        "    fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)\n",
+        "    auc = metrics.roc_auc_score(y_test, y_pred_proba)\n",
+        "\n",
+        "    matrix = metrics.confusion_matrix(y_test, y_pred)\n",
+        "\n",
+        "    return {'Accuracy': accuracy,'Martrix': matrix}"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# K-Nearest Neighbors"
+      ],
+      "metadata": {
+        "id": "wDzE7FsKz_Rp"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "OUoHMRYumfAp",
+        "outputId": "a650c8c1-77e7-42ef-e3de-8fab15538b46"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Accuracy: 0.9050016416766992\n",
+            "Confusion Matrix:\n",
+            " [[57096  1417]\n",
+            " [ 4659   787]]\n"
+          ]
+        }
+      ],
+      "source": [
+        "knn = KNeighborsClassifier(n_neighbors = 5)\n",
+        "\n",
+        "knn.fit(Xtrain, ytrain)\n",
+        "\n",
+        "knn_eval = evaluate_model(knn, Xtest, ytest)\n",
+        "\n",
+        "print('Accuracy Score:', knn_eval['Accuracy'])\n",
+        "print('Confusion Matrix Score:\\n', knn_eval['Martrix'])"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Naive Bais"
+      ],
+      "metadata": {
+        "id": "5-OV9KVj48w0"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gnb = GaussianNB()\n",
+        "\n",
+        "gnb.fit(Xtrain, ytrain)\n",
+        "\n",
+        "gnb_eval = evaluate_model(gnb, Xtest, ytest)\n",
+        "\n",
+        "print('Accuracy Score:', gnb_eval['Accuracy'])\n",
+        "print('Confusion Matrix Score:\\n', gnb_eval['Martrix'])"
+      ],
+      "metadata": {
+        "id": "FvDNcVPORHJH",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "650074a1-7683-401b-94bc-b449a3a8670d"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Accuracy: 0.7663815882049438\n",
+            "Confusion Matrix:\n",
+            " [[45218 13295]\n",
+            " [ 1647  3799]]\n"
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
